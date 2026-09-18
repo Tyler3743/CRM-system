@@ -1,0 +1,16 @@
+assemble:
+  - from: dist
+    into: static
+
+crm-kanban-widget:
+  cssURLs:
+    - static/crm-kanban-widget.css
+  friendlyURLMapping: crm-kanban-widget
+  htmlElementName: crm-kanban-widget
+  instanceable: true
+  name: CRM Kanban Widget
+  portletCategoryName: category.client-extensions
+  type: customElement
+  urls:
+    - static/crm-kanban-widget.js
+  useESM: true

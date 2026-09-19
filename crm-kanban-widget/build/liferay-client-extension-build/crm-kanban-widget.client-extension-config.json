@@ -1,0 +1,17 @@
+{
+  "com.liferay.client.extension.type.configuration.CETConfiguration~crm-kanban-widget" : {
+    ":configurator:policy" : "force",
+    "baseURL" : "${portalURL}/o/crm-kanban-widget",
+    "buildTimestamp" : 1789828163567,
+    "description" : "",
+    "dxp.lxc.liferay.com.virtualInstanceId" : "default",
+    "name" : "CRM Kanban Widget",
+    "projectId" : "crmkanbanwidget",
+    "projectName" : "crm-kanban-widget",
+    "properties" : [ ],
+    "sourceCodeURL" : "",
+    "type" : "customElement",
+    "typeSettings" : [ "friendlyURLMapping=crm-kanban-widget", "instanceable=true", "urls=crm-kanban-widget.js", "useESM=true", "htmlElementName=crm-kanban-widget", "cssURLs=crm-kanban-widget.css", "portletCategoryName=category.client-extensions" ],
+    "webContextPath" : "/crm-kanban-widget"
+  }
+}

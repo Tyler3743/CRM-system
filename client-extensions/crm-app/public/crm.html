@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Phễu Tuyển Sinh Kanban - MekoCRM</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+    .nav-link-active { color: #dc2626; border-bottom: 2px solid #dc2626; }
+    
+    /* Kanban Layout */
+    .kanban-board { display: flex; gap: 16px; overflow-x: auto; padding-bottom: 20px; min-height: calc(100vh - 160px); align-items: flex-start; }
+    .kanban-col { background-color: #f1f5f9; border-radius: 8px; width: 300px; flex-shrink: 0; padding: 12px; display: flex; flex-direction: column; max-height: calc(100vh - 180px); }
+    .kanban-items { flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; min-height: 150px; padding-bottom: 20px; }
+    .kanban-items.drag-over { background-color: rgba(59, 130, 246, 0.1); border-radius: 6px; outline: 2px dashed #3b82f6; }
+    
+    /* Kanban Card */
+    .kanban-card { background-color: #fff; border-radius: 8px; padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border: 1px solid #e2e8f0; cursor: grab; user-select: none; transition: transform 0.1s, box-shadow 0.1s; }
+    .kanban-card:hover { transform: translateY(-2px); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+    .kanban-card:active { cursor: grabbing; }
+    .kanban-card.dragging { opacity: 0.5; transform: scale(0.95); }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+  <!-- Header -->
+  <header class="bg-white px-8 flex justify-between items-center shadow-sm border-b border-gray-200">
+    <div class="text-2xl font-bold tracking-tight py-4">
+      <span class="text-[#1a365d]">Meko</span><span class="text-[#dc2626]">CRM</span>
+    </div>
+    <nav class="hidden md:flex space-x-8 font-semibold text-sm text-gray-600 h-full">
+      <a href="/crm" class="nav-link-active hover:text-red-700 py-5">Phễu tuyển sinh</a>
+      <a href="/courses" class="hover:text-gray-900 py-5">Quản lý lớp học</a>
+      <a href="#" class="hover:text-gray-900 py-5">Quản lý hồ sơ</a>
+    </nav>
+    <div class="flex items-center">
+      <div class="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center text-sm font-bold text-gray-600 cursor-pointer">
+        T
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="flex-grow px-8 py-6 flex flex-col">
+    <h1 class="text-2xl font-bold text-gray-900 mb-6">Phễu tuyển sinh Kanban</h1>
+    
+    <div class="mb-6">
+      <div class="relative w-[400px]">
+        <svg class="absolute left-3 top-2.5 h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+        </svg>
+        <input type="text" placeholder="Nhập Tên, SĐT khách hàng..." class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-blue-500">
+      </div>
+    </div>
+
+    <!-- Kanban Board -->
+    <div class="kanban-board">
+      
+      <!-- Cột MỚI -->
+      <div class="kanban-col border-t-4 border-blue-500">
+        <div class="flex justify-between items-center mb-4">
+          <h2 class="text-xs font-bold text-gray-800 uppercase tracking-wide">MỚI <span id="count-NEW" class="ml-2 bg-gray-200 text-gray-700 px-2 py-0.5 rounded-full">0</span></h2>
+        </div>
+        <div id="col-NEW" class="kanban-items" ondrop="drop(event, 'NEW')" ondragover="allowDrop(event)" ondragleave="dragLeave(event)"></div>
+      </div>
+
+      <!-- Cột CHỜ TƯ VẤN -->
+      <div class="kanban-col border-t-4 border-yellow-400">
+        <div class="flex justify-between items-center mb-4">
+          <h2 class="text-xs font-bold text-gray-800 uppercase tracking-wide">CHỜ TƯ VẤN <span id="count-PENDING_CONSULT" class="ml-2 bg-gray-200 text-gray-700 px-2 py-0.5 rounded-full">0</span></h2>
+        </div>
+        <div id="col-PENDING_CONSULT" class="kanban-items" ondrop="drop(event, 'PENDING_CONSULT')" ondragover="allowDrop(event)" ondragleave="dragLeave(event)"></div>
+      </div>
+
+      <!-- Cột CHỜ ĐẶT CỌC -->
+      <div class="kanban-col border-t-4 border-orange-500">
+        <div class="flex justify-between items-center mb-4">
+          <h2 class="text-xs font-bold text-gray-800 uppercase tracking-wide">CHỜ ĐẶT CỌC <span id="count-PENDING_DEPOSIT" class="ml-2 bg-gray-200 text-gray-700 px-2 py-0.5 rounded-full">0</span></h2>
+        </div>
+        <div id="col-PENDING_DEPOSIT" class="kanban-items" ondrop="drop(event, 'PENDING_DEPOSIT')" ondragover="allowDrop(event)" ondragleave="dragLeave(event)"></div>
+      </div>
+
+      <!-- Cột HOÀN THÀNH -->
+      <div class="kanban-col border-t-4 border-green-500">
+        <div class="flex justify-between items-center mb-4">
+          <h2 class="text-xs font-bold text-gray-800 uppercase tracking-wide">HOÀN THÀNH <span id="count-COMPLETED" class="ml-2 bg-gray-200 text-gray-700 px-2 py-0.5 rounded-full">0</span></h2>
+        </div>
+        <div id="col-COMPLETED" class="kanban-items" ondrop="drop(event, 'COMPLETED')" ondragover="allowDrop(event)" ondragleave="dragLeave(event)"></div>
+      </div>
+
+      <!-- Cột ĐÃ HỦY -->
+      <div class="kanban-col border-t-4 border-gray-400">
+        <div class="flex justify-between items-center mb-4">
+          <h2 class="text-xs font-bold text-gray-800 uppercase tracking-wide">ĐÃ HỦY <span id="count-CANCELLED" class="ml-2 bg-gray-200 text-gray-700 px-2 py-0.5 rounded-full">0</span></h2>
+        </div>
+        <div id="col-CANCELLED" class="kanban-items" ondrop="drop(event, 'CANCELLED')" ondragover="allowDrop(event)" ondragleave="dragLeave(event)"></div>
+      </div>
+
+    </div>
+  </main>
+
+  <script>
+    const STATUSES = ['NEW', 'PENDING_CONSULT', 'PENDING_DEPOSIT', 'COMPLETED', 'CANCELLED'];
+    
+    function formatDateTime(dateStr) {
+      if (!dateStr) return '';
+      const d = new Date(dateStr);
+      return `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth()+1).toString().padStart(2, '0')}/${d.getFullYear()} ${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
+    }
+
+    async function loadKanbanData() {
+      try {
+        const res = await fetch('/api/kanban');
+        const columns = await res.json();
+
+        STATUSES.forEach(status => {
+          const list = columns[status] || [];
+          document.getElementById(`count-${status}`).innerText = list.length;
+          const container = document.getElementById(`col-${status}`);
+          container.innerHTML = '';
+
+          list.forEach(deal => {
+            const cardHtml = `
+              <div id="card-${deal.id}" class="kanban-card" draggable="true" ondragstart="dragStart(event, '${deal.id}', '${status}')" ondragend="dragEnd(event)">
+                <div class="font-bold text-gray-900 text-sm mb-1">${deal.leadName || 'Chưa cập nhật'}</div>
+                <div class="text-xs text-gray-500 mb-2">${deal.leadPhone || ''}</div>
+                <div class="text-xs text-gray-400 mb-3">${formatDateTime(deal.createdAt)}</div>
+                
+                <div class="flex flex-wrap gap-2 items-center">
+                  ${deal.courseName ? `<span class="text-[10px] font-bold text-blue-600 uppercase tracking-wider">${deal.courseName}</span>` : ''}
+                  ${deal.dealStatus === 'CANCELLED' ? `<span class="text-[10px] bg-red-100 text-red-600 px-2 py-0.5 rounded-md font-semibold">Lý do: Học phí cao</span>` : ''}
+                  ${deal.dealStatus === 'COMPLETED' ? `<span class="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded-md font-semibold">Đã thanh toán</span>` : ''}
+                  ${deal.dealStatus === 'PENDING_CONSULT' ? `<span class="text-[10px] bg-orange-100 text-orange-600 px-2 py-0.5 rounded-md font-semibold flex items-center gap-1">⏰ Hẹn gọi: 16:00 (Hôm nay)</span>` : ''}
+                </div>
+                
+                <div class="text-[9px] text-gray-400 mt-3 text-right">#${deal.dealId || deal.id}</div>
+              </div>
+            `;
+            container.innerHTML += cardHtml;
+          });
+        });
+      } catch (err) {
+        console.error('Error loading kanban:', err);
+      }
+    }
+
+    // Drag and Drop implementation
+    let draggedDealId = null;
+    let sourceStatus = null;
+
+    function dragStart(e, dealId, status) {
+      draggedDealId = dealId;
+      sourceStatus = status;
+      e.target.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', dealId);
+    }
+
+    function dragEnd(e) {
+      e.target.classList.remove('dragging');
+      document.querySelectorAll('.kanban-items').forEach(col => col.classList.remove('drag-over'));
+    }
+
+    function allowDrop(e) {
+      e.preventDefault();
+      const col = e.target.closest('.kanban-items');
+      if (col) col.classList.add('drag-over');
+    }
+
+    function dragLeave(e) {
+      const col = e.target.closest('.kanban-items');
+      if (col) col.classList.remove('drag-over');
+    }
+
+    async function drop(e, targetStatus) {
+      e.preventDefault();
+      const col = e.target.closest('.kanban-items');
+      if (col) col.classList.remove('drag-over');
+
+      if (!draggedDealId || sourceStatus === targetStatus) return;
+
+      try {
+        const res = await fetch(`/api/deals/${draggedDealId}/status`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ dealStatus: targetStatus })
+        });
+        const data = await res.json();
+        
+        if (data.success) {
+          loadKanbanData();
+        } else {
+          alert('Lỗi cập nhật trạng thái: ' + (data.error || 'Thao tác không thành công'));
+        }
+      } catch (err) {
+        alert('Lỗi kết nối mạng: ' + err.message);
+      }
+    }
+
+    // Load data on start
+    loadKanbanData();
+  </script>
+</body>
+</html>

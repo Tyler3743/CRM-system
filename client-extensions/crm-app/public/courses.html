@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quản Lý Khóa Học & Lớp Học - MekoCRM</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+    .nav-link-active { color: #dc2626; border-bottom: 2px solid #dc2626; }
+    .card-hover:hover { transform: translateY(-4px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); transition: all 0.2s ease-in-out; }
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar-track { background: #f1f1f1; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+  <!-- Header -->
+  <header class="bg-white px-8 flex justify-between items-center shadow-sm border-b border-gray-200">
+    <div class="text-2xl font-bold tracking-tight py-4">
+      <span class="text-[#1a365d]">Meko</span><span class="text-[#dc2626]">CRM</span>
+    </div>
+    <nav class="hidden md:flex space-x-8 font-semibold text-sm text-gray-600 h-full">
+      <a href="/crm" class="hover:text-gray-900 py-5">Phễu tuyển sinh</a>
+      <a href="/courses" class="nav-link-active hover:text-red-700 py-5">Quản lý lớp học</a>
+      <a href="#" class="hover:text-gray-900 py-5">Quản lý hồ sơ</a>
+    </nav>
+    <div class="flex items-center">
+      <div class="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center text-sm font-bold text-gray-600 cursor-pointer">
+        T
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="flex-grow container mx-auto px-6 py-8 max-w-7xl">
+    <div class="flex justify-between items-end mb-8">
+      <h1 class="text-2xl font-bold text-gray-900">Danh sách Lớp học</h1>
+    </div>
+
+    <!-- Toolbar -->
+    <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 mb-8 flex flex-wrap gap-4 items-end justify-between">
+      <div class="flex gap-4 flex-grow max-w-2xl">
+        <div class="flex-1">
+          <label class="block text-xs font-semibold text-gray-500 uppercase mb-2">TÌM KIẾM LỚP</label>
+          <input type="text" id="searchInput" placeholder="Nhập tên lớp, tên giáo viên..." class="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-red-600 focus:ring-1 focus:ring-red-600" onkeyup="filterCourses()">
+        </div>
+        <div class="w-64">
+          <label class="block text-xs font-semibold text-gray-500 uppercase mb-2">TRẠNG THÁI</label>
+          <select id="statusFilter" class="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-red-600 focus:ring-1 focus:ring-red-600" onchange="filterCourses()">
+            <option value="all">Tất cả trạng thái</option>
+            <option value="SẮP KHAI GIẢNG">Sắp khai giảng</option>
+            <option value="ĐANG HỌC">Đang học</option>
+            <option value="ĐANG TUYỂN SINH">Đang tuyển sinh</option>
+            <option value="ĐÃ KẾT THÚC">Đã kết thúc</option>
+          </select>
+        </div>
+      </div>
+      <div>
+        <button onclick="openModal('createCourseModal')" class="bg-[#dc2626] hover:bg-red-800 text-white font-semibold py-2 px-6 rounded-lg text-sm transition-colors flex items-center gap-2">
+          <span>+</span> Tạo lớp
+        </button>
+      </div>
+    </div>
+
+    <!-- Courses Grid -->
+    <div id="coursesGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      <div class="col-span-full text-center py-12 text-gray-500">
+        Đang tải danh sách lớp học...
+      </div>
+    </div>
+  </main>
+
+  <!-- Modal Tạo Lớp -->
+  <div id="createCourseModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-lg overflow-hidden transform transition-all">
+      <div class="bg-gray-50 px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+        <h3 class="text-lg font-bold text-gray-900">Thêm Khóa / Lớp Học Mới</h3>
+        <button onclick="closeModal('createCourseModal')" class="text-gray-400 hover:text-gray-600">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+      </div>
+      <div class="p-6">
+        <p class="text-sm text-gray-500 mb-6">Tạo thông tin lớp học để tư vấn viên có căn cứ tư vấn và xếp lớp cho học viên.</p>
+        
+        <form id="courseForm" onsubmit="createCourse(event)" class="space-y-4">
+          <div>
+            <label class="block text-sm font-semibold text-gray-700 mb-1">Mã Khóa / Lớp Học <span class="text-red-500">*</span></label>
+            <input type="text" id="courseCode" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:border-red-600 focus:outline-none" placeholder="VD: ENG-IELTS-K25" required>
+          </div>
+          <div>
+            <label class="block text-sm font-semibold text-gray-700 mb-1">Tên Khóa Học / Lớp Học <span class="text-red-500">*</span></label>
+            <input type="text" id="courseName" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:border-red-600 focus:outline-none" placeholder="VD: IELTS 6.5+ (Lớp K25 Tối 2-4-6)" required>
+          </div>
+          <div>
+            <label class="block text-sm font-semibold text-gray-700 mb-1">Học Phí Chính Thức (VNĐ) <span class="text-red-500">*</span></label>
+            <input type="number" id="tuitionFee" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:border-red-600 focus:outline-none" placeholder="VD: 12000000" min="0" required>
+          </div>
+          <div>
+            <label class="block text-sm font-semibold text-gray-700 mb-1">Phí Đặt Cọc Tối Thiểu (VNĐ) <span class="text-red-500">*</span></label>
+            <input type="number" id="depositFee" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:border-red-600 focus:outline-none" placeholder="VD: 2000000" min="0" required>
+          </div>
+          <div class="pt-4 flex justify-end gap-3">
+            <button type="button" onclick="closeModal('createCourseModal')" class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-semibold text-gray-700 hover:bg-gray-50">Hủy</button>
+            <button type="submit" id="btnSubmit" class="px-4 py-2 bg-[#dc2626] text-white rounded-lg text-sm font-semibold hover:bg-red-800">Lưu lớp học</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let allCourses = [];
+
+    // Mock data generators for visual representation (since backend only has basic fields)
+    const MOCK_TEACHERS = ['Cô Thu Trang', 'Thầy Mark', 'Cô Minh Hằng', 'Thầy Tuấn', 'Cô Mai Anh'];
+    const MOCK_SCHEDULES = ['Tối 2-4-6 (19h00 - 21h00)', 'Tối 3-5-7 (18h00 - 20h00)', 'Sáng T7 - CN (08h00 - 11h00)', 'Chiều 2-3-4-5-6'];
+    const MOCK_STATUSES = [
+      { text: 'SẮP KHAI GIẢNG', bg: 'bg-orange-100', textc: 'text-orange-700' },
+      { text: 'ĐANG HỌC', bg: 'bg-green-100', textc: 'text-green-700' },
+      { text: 'ĐANG TUYỂN SINH', bg: 'bg-blue-100', textc: 'text-blue-700' },
+      { text: 'ĐÃ KẾT THÚC', bg: 'bg-gray-100', textc: 'text-gray-600' }
+    ];
+    const MOCK_IMAGES = [
+      'https://images.unsplash.com/photo-1546410531-bb4caa6b424d?auto=format&fit=crop&q=80&w=400&h=200',
+      'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&q=80&w=400&h=200',
+      'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?auto=format&fit=crop&q=80&w=400&h=200',
+      'https://images.unsplash.com/photo-1503676260728-1c00da094a0b?auto=format&fit=crop&q=80&w=400&h=200'
+    ];
+
+    function getRandomItem(arr, str) {
+      // Deterministic based on course name length so it doesn't change on every render
+      const index = (str.length) % arr.length;
+      return arr[index];
+    }
+
+    function renderCard(course) {
+      const teacher = getRandomItem(MOCK_TEACHERS, course.courseName);
+      const schedule = getRandomItem(MOCK_SCHEDULES, course.courseName + 'a');
+      const statusObj = getRandomItem(MOCK_STATUSES, course.courseName + 'b');
+      const image = getRandomItem(MOCK_IMAGES, course.courseName + 'c');
+      
+      const maxStudents = 20 + (course.courseName.length % 10);
+      let currentStudents = 15 + (course.courseName.length % 6);
+      if (statusObj.text === 'ĐÃ KẾT THÚC') currentStudents = maxStudents;
+      const progressPercent = (currentStudents / maxStudents) * 100;
+      const remaining = maxStudents - currentStudents;
+      
+      let capacityText = `<span class="text-red-600 font-semibold">Còn trống ${remaining}</span>`;
+      let progressColor = 'bg-blue-600';
+      
+      if (remaining === 0) {
+        capacityText = `<span class="text-green-600 font-semibold">Kín chỗ</span>`;
+        progressColor = 'bg-green-500';
+      }
+      if (statusObj.text === 'ĐÃ KẾT THÚC') {
+        capacityText = `<span class="text-gray-500 font-semibold">Trống 0</span>`;
+        progressColor = 'bg-gray-400';
+      }
+
+      return `
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex flex-col card-hover h-full">
+          <div class="h-40 w-full relative overflow-hidden bg-gray-200">
+            <img src="${image}" alt="Cover" class="object-cover w-full h-full">
+            <div class="absolute top-2 right-2 bg-white bg-opacity-90 px-2 py-1 rounded text-xs font-bold text-gray-700 shadow-sm">${course.courseId}</div>
+          </div>
+          
+          <div class="p-5 flex-grow flex flex-col">
+            <div class="flex justify-between items-start gap-2 mb-3">
+              <h3 class="font-bold text-gray-900 text-lg leading-tight line-clamp-2">${course.courseName}</h3>
+              <span class="whitespace-nowrap px-2 py-1 rounded-md text-[10px] font-bold ${statusObj.bg} ${statusObj.textc}">${statusObj.text}</span>
+            </div>
+            
+            <div class="space-y-2 mb-6 text-sm text-gray-600">
+              <div class="flex items-center gap-2">
+                <div class="w-5 h-5 rounded-full bg-gray-200 flex-shrink-0"></div>
+                <p>GV: <span class="font-semibold text-gray-800">${teacher}</span></p>
+              </div>
+              <div class="flex items-center gap-2">
+                <div class="w-5 h-5 rounded-full bg-gray-200 flex-shrink-0"></div>
+                <p>Lịch: ${schedule}</p>
+              </div>
+            </div>
+            
+            <div class="mt-auto">
+              <div class="flex justify-between text-xs mb-1">
+                <span class="font-bold text-gray-800">Sĩ số: ${currentStudents} / ${maxStudents} học viên</span>
+                ${capacityText}
+              </div>
+              <div class="w-full bg-gray-100 rounded-full h-1.5 mb-4">
+                <div class="${progressColor} h-1.5 rounded-full" style="width: ${progressPercent}%"></div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="border-t border-gray-100 p-4 text-center">
+            <button class="text-blue-600 font-semibold text-sm hover:text-blue-800 w-full" onclick="alert('Quản lý khóa học ID: ${course.id} hiện chưa khả dụng.')">
+              ${statusObj.text === 'ĐÃ KẾT THÚC' ? 'Xem lại dữ liệu lớp' : 'Quản lý lớp học này'}
+            </button>
+            <!-- Hidden delete for admin -->
+            <button class="text-xs text-red-400 hover:text-red-600 mt-2 block w-full text-center" onclick="deleteCourse('${course.id}', '${course.courseName}')">Xóa (Admin)</button>
+          </div>
+        </div>
+      `;
+    }
+
+    async function loadCourses() {
+      try {
+        const res = await fetch('/api/courses');
+        allCourses = await res.json();
+        renderGrid(allCourses);
+      } catch (err) {
+        document.getElementById('coursesGrid').innerHTML = `<div class="col-span-full text-center text-red-500">Lỗi tải danh sách: ${err.message}</div>`;
+      }
+    }
+
+    function renderGrid(courses) {
+      const grid = document.getElementById('coursesGrid');
+      grid.innerHTML = '';
+      if (courses.length === 0) {
+        grid.innerHTML = '<div class="col-span-full text-center py-12 text-gray-500">Không tìm thấy khóa học nào.</div>';
+        return;
+      }
+      courses.forEach(c => {
+        grid.innerHTML += renderCard(c);
+      });
+    }
+
+    function filterCourses() {
+      const search = document.getElementById('searchInput').value.toLowerCase();
+      const statusFilter = document.getElementById('statusFilter').value;
+      
+      const filtered = allCourses.filter(c => {
+        const matchSearch = c.courseName.toLowerCase().includes(search) || (c.courseId || '').toLowerCase().includes(search);
+        
+        // Mock status logic
+        const statusObj = getRandomItem(MOCK_STATUSES, c.courseName + 'b');
+        const matchStatus = statusFilter === 'all' || statusObj.text === statusFilter;
+        
+        return matchSearch && matchStatus;
+      });
+      
+      renderGrid(filtered);
+    }
+
+    async function createCourse(e) {
+      e.preventDefault();
+      const btn = document.getElementById('btnSubmit');
+      btn.innerText = 'Đang lưu...';
+      btn.disabled = true;
+
+      const payload = {
+        courseId: document.getElementById('courseCode').value.trim(),
+        courseName: document.getElementById('courseName').value.trim(),
+        courseTuitionFee: document.getElementById('tuitionFee').value,
+        courseDepositFee: document.getElementById('depositFee').value
+      };
+
+      try {
+        const res = await fetch('/api/courses', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json; charset=utf-8' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+
+        if (res.ok && data.success) {
+          closeModal('createCourseModal');
+          document.getElementById('courseForm').reset();
+          loadCourses();
+        } else {
+          alert('Lỗi: ' + (data.error || 'Không thể tạo khóa học!'));
+        }
+      } catch (err) {
+        alert('Lỗi kết nối: ' + err.message);
+      } finally {
+        btn.innerText = 'Lưu lớp học';
+        btn.disabled = false;
+      }
+    }
+
+    async function deleteCourse(id, name) {
+      if (!confirm(`Bạn có chắc chắn muốn xóa khóa/lớp học: "${name}"?`)) return;
+      try {
+        const res = await fetch(`/api/courses/${id}`, { method: 'DELETE' });
+        if (res.ok) {
+          loadCourses();
+        } else {
+          alert('Không thể xóa lớp học này do đang có Hồ sơ tư vấn liên kết!');
+        }
+      } catch (err) {
+        alert('Lỗi xóa: ' + err.message);
+      }
+    }
+
+    function openModal(id) {
+      document.getElementById(id).classList.remove('hidden');
+      document.getElementById(id).classList.add('flex');
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).classList.add('hidden');
+      document.getElementById(id).classList.remove('flex');
+    }
+
+    loadCourses();
+  </script>
+</body>
+</html>

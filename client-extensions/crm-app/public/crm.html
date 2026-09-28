@@ -3,35 +3,103 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Phễu Tuyển Sinh Kanban - MekoCRM</title>
+  <title>Phân Hệ CRM - Quản Lý Phễu Tuyển Sinh & Kanban Kéo Thả</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
     .nav-link-active { color: #dc2626; border-bottom: 2px solid #dc2626; }
-    
-    /* Kanban Layout */
     .kanban-board { display: flex; gap: 16px; overflow-x: auto; padding-bottom: 20px; min-height: calc(100vh - 160px); align-items: flex-start; }
     .kanban-col { background-color: #f1f5f9; border-radius: 8px; width: 300px; flex-shrink: 0; padding: 12px; display: flex; flex-direction: column; max-height: calc(100vh - 180px); }
     .kanban-items { flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; min-height: 150px; padding-bottom: 20px; }
     .kanban-items.drag-over { background-color: rgba(59, 130, 246, 0.1); border-radius: 6px; outline: 2px dashed #3b82f6; }
-    
-    /* Kanban Card */
-    .kanban-card { background-color: #fff; border-radius: 8px; padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border: 1px solid #e2e8f0; cursor: grab; user-select: none; transition: transform 0.1s, box-shadow 0.1s; }
-    .kanban-card:hover { transform: translateY(-2px); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
-    .kanban-card:active { cursor: grabbing; }
-    .kanban-card.dragging { opacity: 0.5; transform: scale(0.95); }
+    .card-item { background-color: #fff; border-radius: 8px; padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border: 1px solid #e2e8f0; cursor: grab; user-select: none; transition: transform 0.1s, box-shadow 0.1s; }
+    .card-item:hover { transform: translateY(-2px); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+    .card-item:active { cursor: grabbing; }
+    .card-item.dragging { opacity: 0.5; transform: scale(0.95); }
+    .card-item.highlight-pulse { animation: pulseGlow 1.5s infinite; }
+    @keyframes pulseGlow { 0%, 100% { box-shadow: 0 0 0 3px rgba(24, 144, 255, 0.4); } 50% { box-shadow: 0 0 0 6px rgba(24, 144, 255, 0.8); } }
 
-    /* Custom Scrollbar */
     ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
     ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+    :root { --primary: #1890ff; --primary-hover: #40a9ff; --success: #52c41a; --warning: #faad14; --danger: #f5222d; --purple: #722ed1; }
+    .btn { padding: 9px 18px; border-radius: 6px; border: none; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 6px; }
+    
+    /* FIX: ADD !important TO FORCE COLORS IN CASE TAILWIND INTERFERES */
+    .btn-primary { background: #1890ff !important; color: #ffffff !important; border: none !important; }
+    .btn-purple { background: #7d2c0a !important; color: #ffffff !important; border: none !important; }
+    .btn-danger { background: #f5222d !important; color: #ffffff !important; border: none !important; }
+    
+    .btn-sm { padding: 4px 10px; font-size: 12px; border-radius: 4px; border: 1px solid #d9d9d9; cursor: pointer; }
+    
+    .customer-info-card { display: none; background: #fafafa; border: 1px solid #d9d9d9; border-radius: 8px; padding: 18px; margin-top: 16px; animation: fadeIn 0.25s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
+    .customer-badge { display: inline-block; padding: 4px 12px; border-radius: 4px; font-size: 12px; font-weight: 700; text-transform: uppercase; margin-bottom: 12px; }
+    .badge-returning { background: #f9f0ff; color: var(--purple); border: 1px solid #d3adf7; }
+    .badge-new { background: #e6f7ff; color: var(--primary); border: 1px solid #91d5ff; }
+    .badge-active-alert { background: #fffbe6; color: #d48806; border: 1px solid #ffe58f; padding: 8px 12px; border-radius: 6px; margin-bottom: 14px; font-size: 13px; display: flex; align-items: center; justify-content: space-between; }
+    .customer-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 14px; font-size: 13px; }
+    .history-table { width: 100%; border-collapse: collapse; font-size: 12px; background: #fff; border-radius: 6px; margin-bottom: 12px; }
+    .history-table th, .history-table td { padding: 9px 12px; border: 1px solid #f0f0f0; text-align: left; }
+    .history-table th { background: #fafafa; font-weight: 600; }
+
+    .card-badge-row { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+    .card-tag { font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 4px; text-transform: uppercase; }
+    .tag-new-lead { background: #e6f7ff; color: #096dd9; border: 1px solid #91d5ff; }
+    .tag-returning-lead { background: #f9f0ff; color: #722ed1; border: 1px solid #d3adf7; }
+    .tag-resubmitted { background: #fff2e8; color: #d4380d; border: 1px solid #ffbb96; animation: blink 1.2s infinite; }
+    @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
+
+    .card-title { font-weight: 700; font-size: 14px; margin-bottom: 4px; color: #1f1f1f; display: flex; justify-content: space-between; align-items: center; }
+    .card-deal-id { font-size: 11px; color: #8c8c8c; font-family: monospace; }
+    .card-phone { font-size: 13px; color: #595959; margin-bottom: 6px; font-weight: 500; display: flex; align-items: center; gap: 4px; }
+    .card-course { font-size: 12px; background: #e6f7ff; color: #0050b3; padding: 3px 8px; border-radius: 4px; display: inline-block; margin-bottom: 8px; font-weight: 600; }
+    .card-source { font-size: 11px; color: #08979c; background: #e6fffb; border: 1px solid #87e8de; padding: 1px 6px; border-radius: 4px; display: inline-block; margin-bottom: 8px; }
+    .card-log-preview { font-size: 11px; background: #fafafa; border: 1px solid #f0f0f0; border-radius: 4px; padding: 6px 8px; color: #595959; line-height: 1.4; margin-bottom: 8px; }
+    .card-sale { font-size: 12px; color: #595959; background: #f5f5f5; border: 1px dashed #d9d9d9; padding: 4px 8px; border-radius: 4px; display: flex; align-items: center; gap: 5px; margin-bottom: 10px; }
+    .card-actions { padding-top: 8px; border-top: 1px solid #f0f0f0; display: flex; justify-content: space-between; align-items: center; }
+    
+    .tag-status { padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+    .tag-NEW { background: #e6f7ff; color: #096dd9; }
+    .tag-PENDING_CONSULT { background: #fffbe6; color: #d48806; }
+    .tag-PENDING_DEPOSIT { background: #f9f0ff; color: #722ed1; }
+    .tag-COMPLETED { background: #f6ffed; color: #389e0d; }
+    .tag-CANCELLED { background: #fff1f0; color: #cf1322; }
+
+    .drawer-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); z-index: 1000; justify-content: flex-end; }
+    .drawer-overlay.active { display: flex; }
+    .drawer-box { background: #fff; width: 560px; max-width: 95%; height: 100%; box-shadow: -4px 0 20px rgba(0,0,0,0.15); display: flex; flex-direction: column; animation: slideLeft 0.25s ease; }
+    @keyframes slideLeft { from { transform: translateX(100%); } to { transform: translateX(0); } }
+    .drawer-header { padding: 18px 24px; border-bottom: 1px solid #f0f0f0; display: flex; justify-content: space-between; align-items: center; background: #fafafa; }
+    .drawer-close { background: none; border: none; font-size: 22px; cursor: pointer; color: #8c8c8c; }
+    .drawer-body { flex: 1; overflow-y: auto; padding: 20px 24px; }
+    .drawer-section { margin-bottom: 22px; }
+    .drawer-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 13px; }
+
+    .timeline { position: relative; padding-left: 20px; border-left: 2px solid #e8e8e8; margin-top: 12px; }
+    .timeline-item { position: relative; margin-bottom: 16px; }
+    .timeline-item::before { content: ''; position: absolute; left: -25px; top: 3px; width: 8px; height: 8px; border-radius: 50%; background: var(--primary); border: 2px solid #fff; box-shadow: 0 0 0 2px var(--primary); }
+    .timeline-time { font-size: 11px; color: #8c8c8c; margin-bottom: 2px; }
+    .timeline-content { font-size: 13px; color: #262626; background: #fafafa; border: 1px solid #f0f0f0; border-radius: 6px; padding: 8px 12px; }
+
+    .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1100; justify-content: center; align-items: center; }
+    .modal-overlay.active { display: flex; }
+    .modal-card { background: #fff; width: 540px; max-width: 90%; border-radius: 8px; padding: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); animation: pop 0.2s ease; }
+    @keyframes pop { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+    .modal-footer { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+    .form-group { margin-bottom: 14px; }
+    .form-group label { display: block; margin-bottom: 6px; font-size: 13px; font-weight: 600; }
+    .form-control { width: 100%; padding: 9px 12px; border: 1.5px solid #d9d9d9; border-radius: 6px; font-size: 14px; }
+    .vietqr-box { text-align: center; background: #fafafa; border: 1px dashed #d9d9d9; border-radius: 8px; padding: 16px; margin: 14px 0; }
+    .vietqr-img { width: 220px; height: 220px; border-radius: 6px; border: 1px solid #e8e8e8; margin: 10px auto; display: block; object-fit: contain; }
   </style>
 </head>
 <body class="min-h-screen flex flex-col">
 
-  <!-- Header -->
+  <!-- HEADER TAILWIND CŨ -->
   <header class="bg-white px-8 flex justify-between items-center shadow-sm border-b border-gray-200">
     <div class="text-2xl font-bold tracking-tight py-4">
       <span class="text-[#1a365d]">Meko</span><span class="text-[#dc2626]">CRM</span>
@@ -39,173 +107,903 @@
     <nav class="hidden md:flex space-x-8 font-semibold text-sm text-gray-600 h-full">
       <a href="/crm" class="nav-link-active hover:text-red-700 py-5">Phễu tuyển sinh</a>
       <a href="/courses" class="hover:text-gray-900 py-5">Quản lý lớp học</a>
-      <a href="#" class="hover:text-gray-900 py-5">Quản lý hồ sơ</a>
+      <a href="/archives" class="hover:text-gray-900 py-5">Quản lý hồ sơ</a>
     </nav>
-    <div class="flex items-center">
-      <div class="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center text-sm font-bold text-gray-600 cursor-pointer">
-        T
-      </div>
+    <div class="flex items-center gap-4">
+      <div class="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center text-sm font-bold text-gray-600 cursor-pointer">T</div>
     </div>
   </header>
 
-  <!-- Main Content -->
   <main class="flex-grow px-8 py-6 flex flex-col">
-    <h1 class="text-2xl font-bold text-gray-900 mb-6">Phễu tuyển sinh Kanban</h1>
+    <div class="flex justify-between items-center mb-6">
+      <h1 class="text-2xl font-bold text-gray-900">Phễu tuyển sinh Kanban</h1>
+      <button class="bg-blue-50 text-blue-600 border border-blue-200 px-4 py-2 rounded-md text-sm font-bold shadow-sm hover:bg-blue-100 transition-colors" onclick="loadKanbanData()">🔄 Làm mới Kanban</button>
+    </div>
     
-    <div class="mb-6">
+    <!-- THANH TÌM KIẾM -->
+    <div class="mb-6 flex gap-4">
       <div class="relative w-[400px]">
         <svg class="absolute left-3 top-2.5 h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
         </svg>
-        <input type="text" placeholder="Nhập Tên, SĐT khách hàng..." class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-blue-500">
+        <input type="tel" id="lookupPhone" onkeypress="if(event.key==='Enter') lookupCustomer()" placeholder="Nhập số điện thoại cần tra cứu (VD: 0988776655)..." class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-blue-500 shadow-sm">
+      </div>
+      <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-sm" onclick="lookupCustomer()">🔍 Tra cứu</button>
+    </div>
+
+    <!-- KẾT QUẢ TÌM KIẾM -->
+    <div id="customerResult" class="customer-info-card">
+      <div id="activeDealAlert" class="badge-active-alert" style="display: none;">
+        <div>
+          <strong>⚠️ LƯU Ý:</strong> Khách hàng này <strong>ĐANG CÓ HỒ SƠ ĐANG XỬ LÝ TRÊN PHỄU</strong> 
+          (Mã: <strong id="alertDealCode">DEAL-XXX</strong>, Cột: <strong id="alertDealStatus">CHỜ TƯ VẤN</strong>).
+        </div>
+        <button class="btn btn-sm btn-primary" onclick="locateAndHighlightDeal()">👉 Xem ngay trên Kanban</button>
+      </div>
+
+      <div id="customerBadge" class="customer-badge"></div>
+      <div class="customer-grid">
+        <div><strong>Họ và tên:</strong> <span id="resName">-</span></div>
+        <div><strong>Số điện thoại:</strong> <span id="resPhone">-</span></div>
+        <div><strong>Địa chỉ Email:</strong> <span id="resEmail">-</span></div>
+        <div><strong>Kênh nguồn:</strong> <span id="resSource" style="color: #08979c; font-weight: 600;">-</span></div>
+      </div>
+
+      <div id="historyBlock">
+        <div class="history-title">📚 Toàn Bộ Lịch Sử Các Đợt Tư Vấn Trước Đây:</div>
+        <table class="history-table">
+          <thead>
+            <tr>
+              <th>Mã Deal</th><th>Khóa Học</th><th>Trạng Thái</th><th>Đã Đóng</th><th>Lý Do Hủy / Ghi Chú</th><th>Nhật Ký Gần Nhất</th>
+            </tr>
+          </thead>
+          <tbody id="resHistoryBody"></tbody>
+        </table>
+      </div>
+      <div style="text-align: right; margin-top: 10px;">
+        <button class="btn btn-primary" onclick="openCreateDealModal()">+ Tạo Deal Tư Vấn Khóa Mới Cho Khách Này</button>
       </div>
     </div>
 
-    <!-- Kanban Board -->
+    <!-- BẢNG KANBAN CŨ (TAILWIND) KẾT HỢP VỚI HÀM KÉO THẢ MỚI -->
     <div class="kanban-board">
-      
-      <!-- Cột MỚI -->
+      <!-- CỘT 1: MỚI -->
       <div class="kanban-col border-t-4 border-blue-500">
         <div class="flex justify-between items-center mb-4">
           <h2 class="text-xs font-bold text-gray-800 uppercase tracking-wide">MỚI <span id="count-NEW" class="ml-2 bg-gray-200 text-gray-700 px-2 py-0.5 rounded-full">0</span></h2>
         </div>
-        <div id="col-NEW" class="kanban-items" ondrop="drop(event, 'NEW')" ondragover="allowDrop(event)" ondragleave="dragLeave(event)"></div>
+        <div id="col-NEW" class="kanban-items" ondrop="handleDrop(event, 'NEW')" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)"></div>
       </div>
 
-      <!-- Cột CHỜ TƯ VẤN -->
+      <!-- CỘT 2: CHỜ TƯ VẤN -->
       <div class="kanban-col border-t-4 border-yellow-400">
         <div class="flex justify-between items-center mb-4">
           <h2 class="text-xs font-bold text-gray-800 uppercase tracking-wide">CHỜ TƯ VẤN <span id="count-PENDING_CONSULT" class="ml-2 bg-gray-200 text-gray-700 px-2 py-0.5 rounded-full">0</span></h2>
         </div>
-        <div id="col-PENDING_CONSULT" class="kanban-items" ondrop="drop(event, 'PENDING_CONSULT')" ondragover="allowDrop(event)" ondragleave="dragLeave(event)"></div>
+        <div id="col-PENDING_CONSULT" class="kanban-items" ondrop="handleDrop(event, 'PENDING_CONSULT')" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)"></div>
       </div>
 
-      <!-- Cột CHỜ ĐẶT CỌC -->
+      <!-- CỘT 3: CHỜ ĐẶT CỌC -->
       <div class="kanban-col border-t-4 border-orange-500">
         <div class="flex justify-between items-center mb-4">
           <h2 class="text-xs font-bold text-gray-800 uppercase tracking-wide">CHỜ ĐẶT CỌC <span id="count-PENDING_DEPOSIT" class="ml-2 bg-gray-200 text-gray-700 px-2 py-0.5 rounded-full">0</span></h2>
         </div>
-        <div id="col-PENDING_DEPOSIT" class="kanban-items" ondrop="drop(event, 'PENDING_DEPOSIT')" ondragover="allowDrop(event)" ondragleave="dragLeave(event)"></div>
+        <div id="col-PENDING_DEPOSIT" class="kanban-items" ondrop="handleDrop(event, 'PENDING_DEPOSIT')" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)"></div>
       </div>
 
-      <!-- Cột HOÀN THÀNH -->
+      <!-- CỘT 4: HOÀN THÀNH -->
       <div class="kanban-col border-t-4 border-green-500">
         <div class="flex justify-between items-center mb-4">
           <h2 class="text-xs font-bold text-gray-800 uppercase tracking-wide">HOÀN THÀNH <span id="count-COMPLETED" class="ml-2 bg-gray-200 text-gray-700 px-2 py-0.5 rounded-full">0</span></h2>
         </div>
-        <div id="col-COMPLETED" class="kanban-items" ondrop="drop(event, 'COMPLETED')" ondragover="allowDrop(event)" ondragleave="dragLeave(event)"></div>
+        <div id="col-COMPLETED" class="kanban-items" ondrop="handleDrop(event, 'COMPLETED')" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)"></div>
       </div>
 
-      <!-- Cột ĐÃ HỦY -->
+      <!-- CỘT 5: ĐÃ HỦY -->
       <div class="kanban-col border-t-4 border-gray-400">
         <div class="flex justify-between items-center mb-4">
           <h2 class="text-xs font-bold text-gray-800 uppercase tracking-wide">ĐÃ HỦY <span id="count-CANCELLED" class="ml-2 bg-gray-200 text-gray-700 px-2 py-0.5 rounded-full">0</span></h2>
         </div>
-        <div id="col-CANCELLED" class="kanban-items" ondrop="drop(event, 'CANCELLED')" ondragover="allowDrop(event)" ondragleave="dragLeave(event)"></div>
+        <div id="col-CANCELLED" class="kanban-items" ondrop="handleDrop(event, 'CANCELLED')" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)"></div>
+      </div>
+    </div>
+
+  </main>
+  
+  <!-- ==================== SIDE DRAWER CHI TIẾT DEAL (CHỨC NĂNG 1.4) ==================== -->
+  <div id="drawerOverlay" class="drawer-overlay" onclick="closeDrawer(event)">
+    <div class="drawer-box" onclick="event.stopPropagation()">
+      <div class="drawer-header">
+        <div>
+          <h3 id="drLeadName">Chi Tiết Hồ Sơ Học Viên</h3>
+          <span style="font-size: 12px; color: #8c8c8c;" id="drDealId">DEAL-XXXXXX</span>
+        </div>
+        <button class="drawer-close" onclick="closeDrawer()">&times;</button>
       </div>
 
+      <div class="drawer-body">
+        
+        <!-- THÔNG TIN HỌC VIÊN -->
+        <div class="drawer-section">
+          <h4>Thông Tin Học Viên (Bảng LEAD)</h4>
+          <div class="drawer-grid">
+            <div><strong>Họ và tên:</strong> <span id="drName">-</span></div>
+            <div><strong>Số điện thoại:</strong> <span id="drPhone">-</span></div>
+            <div><strong>Email:</strong> <span id="drEmail">-</span></div>
+            <div><strong>Nguồn tiếp cận:</strong> <span id="drSource">-</span></div>
+          </div>
+        </div>
+
+        <!-- THÔNG TIN KHÓA HỌC & TÀI CHÍNH -->
+        <div class="drawer-section">
+          <h4>Khóa Học & Học Phí (Bảng COURSE & DEAL)</h4>
+          <div class="drawer-grid">
+            <div><strong>Khóa học quan tâm:</strong> <span id="drCourse">-</span></div>
+            <div><strong>Trạng thái phễu:</strong> <span id="drStatus">-</span></div>
+            <div><strong>Học phí chính thức:</strong> <span id="drTuition">-</span></div>
+            <div><strong>Đã nộp / Cọc:</strong> <span id="drPaid" style="color: #389e0d; font-weight: 700;">-</span></div>
+            <div><strong>Tư vấn viên:</strong> <span id="drSale" style="color: var(--primary); font-weight: 600;">-</span></div>
+            <div><strong>Ngày tạo hồ sơ:</strong> <span id="drDate">-</span></div>
+          </div>
+        </div>
+
+        <!-- THÔNG TIN BÀI KIỂM TRA NĂNG LỰC ĐẦU VÀO (CHỨC NĂNG TEST_SCORE) -->
+        <div class="drawer-section" style="background: #fdf6ff; border: 1px solid #f0d8ff; border-radius: 8px; padding: 14px;">
+          <h4 style="border: none; margin-bottom: 8px; color: var(--purple);">🎯 Kết Quả Kiểm Tra Năng Lực Đầu Vào</h4>
+          <div class="drawer-grid">
+            <div><strong>Điểm số đạt được:</strong> <span id="drTestScore" style="color: #389e0d; font-weight: 700; font-size: 15px;">-</span></div>
+            <div><strong>Đánh giá năng lực:</strong> <span id="drTestEval" style="font-weight: 600;">-</span></div>
+          </div>
+          <div style="margin-top: 10px; text-align: right;">
+            <button class="btn btn-sm btn-purple" onclick="openSendTestModal(document.getElementById('drInputDealId').value, document.getElementById('drName').innerText)">📤 Gửi Link Bài Test Cho Học Viên</button>
+          </div>
+        </div>
+
+        <!-- CÁC DEAL KHÁC CỦA CÙNG KHÁCH HÀNG NÀY NẾU CÓ -->
+        <div class="drawer-section" id="drOtherDealsSection" style="display: none;">
+          <h4>Các Khóa Học Khác Khách Này Từng Tham Gia / Hỏi Trước Đây:</h4>
+          <ul id="drOtherDealsList" style="font-size: 12px; padding-left: 18px; color: #595959;"></ul>
+        </div>
+
+        <!-- TIMELINE NHẬT KÝ TƯ VẤN (SALE LOG) -->
+        <div class="drawer-section">
+          <h4>Nhật Ký Tương Tác & Lịch Hẹn (Bảng SALE_LOG)</h4>
+          <div class="timeline" id="drTimeline">
+            <div style="font-size: 13px; color: #8c8c8c;">Chưa có nhật ký ghi chép nào.</div>
+          </div>
+        </div>
+
+        <!-- FORM GHI NHẬT KÝ NHANH TRỰC TIẾP TRONG DRAWER -->
+        <div class="drawer-section" style="background: #fafafa; border: 1px solid #f0f0f0; border-radius: 8px; padding: 14px;">
+          <h4 style="border: none; margin-bottom: 8px; color: #001529;">+ Thêm Nhật Ký Cuộc Gọi / Tin Nhắn Mới</h4>
+          <input type="hidden" id="drInputDealId">
+          
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+            <div>
+              <label style="font-size: 12px; font-weight: 600; display: block; margin-bottom: 4px;">Kênh liên hệ</label>
+              <select id="drInputChannel" class="form-control" style="font-size: 13px; padding: 6px 10px;">
+                <option value="Điện thoại">Gọi điện thoại</option>
+                <option value="Nhắn tin Zalo">Nhắn tin Zalo</option>
+                <option value="Nhắn tin Facebook">Nhắn tin Facebook</option>
+                <option value="Gặp trực tiếp">Gặp trực tiếp tại quầy</option>
+                <option value="Email">Gửi Email</option>
+              </select>
+            </div>
+            <div>
+              <label style="font-size: 12px; font-weight: 600; display: block; margin-bottom: 4px;">Kết quả cuộc gọi</label>
+              <select id="drInputOutcome" class="form-control" style="font-size: 13px; padding: 6px 10px;">
+                <option value="Nghe máy - Quan tâm">Nghe máy - Quan tâm</option>
+                <option value="Không bắt máy / Máy bận">Không bắt máy / Máy bận</option>
+                <option value="Hẹn gọi lại sau">Hẹn gọi lại sau</option>
+                <option value="Đồng ý đặt cọc">Đồng ý đặt cọc</option>
+                <option value="Từ chối">Khách từ chối</option>
+              </select>
+            </div>
+          </div>
+
+          <div style="margin-bottom: 10px;">
+            <label style="font-size: 12px; font-weight: 600; display: block; margin-bottom: 4px;">Nội dung trao đổi chi tiết</label>
+            <textarea id="drInputNote" class="form-control" rows="2" style="font-size: 13px;" placeholder="Ghi nhận nguyện vọng, lịch học, câu hỏi của khách..."></textarea>
+          </div>
+
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div style="flex: 1; margin-right: 10px;">
+              <input type="text" id="drInputAppointment" class="form-control" style="font-size: 12px; padding: 6px 8px;" placeholder="Lịch hẹn gọi lại (VD: 14h ngày mai)...">
+            </div>
+            <button class="btn btn-primary" style="font-size: 12px; padding: 7px 16px;" onclick="submitDrawerLog()">Lưu Ghi Chú</button>
+          </div>
+        </div>
+
+      </div>
     </div>
-  </main>
+  </div>
+
+  <!-- ==================== MODAL 1: CHUYỂN SANG CHỜ CỌC & MÃ VIETQR (CHỨC NĂNG 1.5) ==================== -->
+  <div id="depositModal" class="modal-overlay">
+    <div class="modal-card">
+      <h3>💳 Xác Nhận Đặt Cọc & Tạo Mã VietQR</h3>
+      <input type="hidden" id="depositDealId">
+
+      <p style="font-size: 13px; color: #595959; margin-bottom: 14px;">
+        Học viên đã đồng ý đăng ký. Vui lòng xác nhận mức phí đặt cọc và gửi mã QR thanh toán cho học viên.
+      </p>
+
+      <div class="form-group">
+        <label>Khóa học đăng ký</label>
+        <input type="text" id="depositCourseName" class="form-control" readonly style="background: #f5f5f5;">
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+        <div class="form-group">
+          <label>Học phí chính thức</label>
+          <input type="text" id="depositTuition" class="form-control" readonly style="background: #f5f5f5;">
+        </div>
+        <div class="form-group">
+          <label>Số tiền đặt cọc (VNĐ) <span>*</span></label>
+          <input type="number" id="depositAmount" class="form-control" oninput="updateVietQRImage()">
+        </div>
+      </div>
+
+      <!-- KHUNG MÃ VIETQR -->
+      <div class="vietqr-box">
+        <div style="font-size: 13px; font-weight: 700; color: #001529; margin-bottom: 4px;">Mã Chuyển Khoản VietQR Tự Động</div>
+        <div style="font-size: 12px; color: #8c8c8c;">Học viên quét mã qua ứng dụng ngân hàng bất kỳ để thanh toán</div>
+        <img id="vietqrImg" class="vietqr-img" src="" alt="Mã VietQR">
+        <div style="font-size: 12px; color: #595959;">
+          Cú pháp nội dung: <strong id="vietqrSyntax" style="color: var(--primary);">MEKO ...</strong>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-sm" onclick="closeModal('depositModal')">Hủy Bỏ</button>
+        <button class="btn btn-sm btn-purple" onclick="confirmDepositTransition()">Xác Nhận Đặt Cọc & Chuyển Trạng Thái</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL 2: XÁC NHẬN HỦY / THẤT BẠI (LOST) ==================== -->
+  <div id="cancelModal" class="modal-overlay">
+    <div class="modal-card">
+      <h3 style="color: #cf1322;">❌ Xác Nhận Hủy Hồ Sơ (Lost)</h3>
+      <input type="hidden" id="cancelDealId">
+      
+      <p style="font-size: 13px; color: #595959; margin-bottom: 14px;">
+        Bắt buộc ghi nhận lý do thất bại để thống kê chất lượng nguồn tuyển sinh và cải tiến tư vấn.
+      </p>
+
+      <div class="form-group">
+        <label>Lý do từ chối chính <span>*</span></label>
+        <select id="cancelReason" class="form-control">
+          <option value="Học phí cao">Học phí cao, chưa đủ khả năng tài chính</option>
+          <option value="Trùng lịch bận">Trùng lịch bận (lịch học/lịch làm việc)</option>
+          <option value="Đi lại xa">Khoảng cách đi lại quá xa trung tâm</option>
+          <option value="Đã học nơi khác">Đã đăng ký học tại trung tâm khác</option>
+          <option value="Đổi định hướng">Đổi định hướng nghề nghiệp / kế hoạch</option>
+          <option value="Không liên lạc được">Không liên lạc được (thuê bao, không nghe máy)</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Ghi chú lý do chi tiết</label>
+        <textarea id="cancelNote" class="form-control" rows="3" placeholder="Nhập chi tiết phản hồi của khách hàng..."></textarea>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-sm" onclick="closeModal('cancelModal')">Quay Lại</button>
+        <button class="btn btn-sm btn-danger" onclick="confirmCancelTransition()">Xác Nhận Hủy Hồ Sơ</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL 3: TẠO DEAL MỚI CHO KHÁCH CŨ ==================== -->
+  <div id="createDealModal" class="modal-overlay">
+    <div class="modal-card">
+      <h3>+ Tạo Deal Tư Vấn Khóa Mới Cho Khách Hàng</h3>
+      <p style="font-size: 13px; color: #8c8c8c; margin-bottom: 16px;">Tạo cơ hội tuyển sinh mới trên Lead đã có sẵn mà không làm trùng lặp thông tin khách hàng.</p>
+      
+      <div class="form-group">
+        <label>Khóa học mới khách hàng quan tâm <span>*</span></label>
+        <select id="newDealCourse" class="form-control"></select>
+      </div>
+
+      <div class="form-group">
+        <label>Kênh nguồn lần này khách liên hệ <span>*</span></label>
+        <select id="newDealSource" class="form-control">
+          <option value="Nhắn tin Facebook (Fanpage)">Nhắn tin Facebook (Fanpage)</option>
+          <option value="Nhắn tin Zalo">Nhắn tin Zalo</option>
+          <option value="Gọi điện Hotline">Gọi điện Hotline</option>
+          <option value="Trực tiếp tại quầy">Trực tiếp tại quầy</option>
+          <option value="Website Form">Website Form</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Tư vấn viên nhận phụ trách Deal này</label>
+        <select id="newDealStaff" class="form-control"></select>
+      </div>
+
+      <div class="form-group">
+        <label>Ghi chú nguyện vọng ban đầu</label>
+        <textarea id="newDealNote" class="form-control" rows="2" placeholder="Ghi chú thêm..."></textarea>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-sm" onclick="closeModal('createDealModal')">Hủy</button>
+        <button class="btn btn-sm btn-primary" onclick="submitNewDealForLead()">Tạo Deal Ngay</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL 4: GỬI BÀI TEST NĂNG LỰC CHO HỌC VIÊN ==================== -->
+  <div id="sendTestModal" class="modal-overlay">
+    <div class="modal-card">
+      <h3 style="color: var(--purple);">📤 Gửi Bài Test Đánh Giá Năng Lực Đầu Vào</h3>
+      <p style="font-size: 13px; color: #595959; margin-bottom: 14px;">
+        Học viên: <strong id="sendTestStudentName">-</strong>. Hệ thống tự động phân phối đề thi phù hợp với khóa học và <strong>tự động chấm điểm</strong> lưu vào hồ sơ ngay khi học viên nộp bài.
+      </p>
+
+      <div class="form-group">
+        <label>Đường dẫn bài kiểm tra năng lực trực tuyến</label>
+        <div style="display: flex; gap: 8px;">
+          <input type="text" id="sendTestLink" class="form-control" readonly style="background: #f5f5f5; font-family: monospace; font-size: 13px;">
+          <button class="btn btn-primary" onclick="copyTestLink()">📋 Sao chép Link</button>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Mẫu tin nhắn gửi học viên qua Zalo / Facebook / SMS</label>
+        <textarea id="sendTestMessageTemplate" class="form-control" rows="4" style="font-size: 13px;" readonly></textarea>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-sm" onclick="closeModal('sendTestModal')">Đóng</button>
+        <button class="btn btn-sm btn-purple" onclick="openTestDirectly()">🚀 Mở Bài Test Ngay (Làm thử / Giám sát)</button>
+      </div>
+    </div>
+  </div>
 
   <script>
-    const STATUSES = ['NEW', 'PENDING_CONSULT', 'PENDING_DEPOSIT', 'COMPLETED', 'CANCELLED'];
-    
-    function formatDateTime(dateStr) {
-      if (!dateStr) return '';
-      const d = new Date(dateStr);
-      return `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth()+1).toString().padStart(2, '0')}/${d.getFullYear()} ${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
+    let currentLeadData = null;
+    let draggedDealId = null;
+    let draggedOldStatus = null;
+    let cachedCourses = [];
+    let cachedStaff = [];
+
+    // ==========================================
+    // 1. KÉO - THẢ TRÊN BẢNG KANBAN (DRAG & DROP)
+    // ==========================================
+    function handleDragStart(e, dealId, oldStatus) {
+      draggedDealId = dealId;
+      draggedOldStatus = oldStatus;
+      e.dataTransfer.setData('text/plain', dealId);
+      e.target.classList.add('dragging');
     }
 
+    function handleDragEnd(e) {
+      e.target.classList.remove('dragging');
+      document.querySelectorAll('.kanban-items').forEach(col => col.classList.remove('drag-over'));
+    }
+
+    function handleDragOver(e) {
+      e.preventDefault();
+      e.currentTarget.classList.add('drag-over');
+    }
+
+    function handleDragLeave(e) {
+      e.currentTarget.classList.remove('drag-over');
+    }
+
+    async function handleDrop(e, targetStatus) {
+      e.preventDefault();
+      e.currentTarget.classList.remove('drag-over');
+
+      if (!draggedDealId || draggedOldStatus === targetStatus) return;
+
+      const dealId = draggedDealId;
+      const oldStatus = draggedOldStatus;
+
+      // Xử lý các quy tắc nghiệp vụ theo Đề bài khi kéo vào từng cột:
+      if (targetStatus === 'PENDING_DEPOSIT') {
+        // Kéo vào CHỜ CỌC -> Mở Popup VietQR & Xác nhận cọc (Chức năng 1.5)
+        openDepositModal(dealId);
+      } else if (targetStatus === 'CANCELLED') {
+        // Kéo vào HỦY -> Mở Popup Bắt buộc chọn Lý do hủy (Chức năng 1.5)
+        openCancelModal(dealId);
+      } else if (targetStatus === 'COMPLETED') {
+        // Kéo vào HOÀN THÀNH -> Xác nhận đã thu đủ học phí
+        if (confirm('Xác nhận học viên đã thanh toán đủ học phí và hoàn thành tuyển sinh?')) {
+          await updateDealStatusApi(dealId, 'COMPLETED');
+        }
+      } else {
+        // Chuyển sang NEW hoặc PENDING_CONSULT (hỗ trợ cả kéo lùi về PENDING_CONSULT để chăm sóc tiếp)
+        await updateDealStatusApi(dealId, targetStatus);
+      }
+    }
+
+    // ==========================================
+    // 2. TẢI DỮ LIỆU BẢNG KANBAN
+    // ==========================================
     async function loadKanbanData() {
       try {
         const res = await fetch('/api/kanban');
         const columns = await res.json();
+        const statuses = ['NEW', 'PENDING_CONSULT', 'PENDING_DEPOSIT', 'COMPLETED', 'CANCELLED'];
 
-        STATUSES.forEach(status => {
+        statuses.forEach(status => {
           const list = columns[status] || [];
           document.getElementById(`count-${status}`).innerText = list.length;
           const container = document.getElementById(`col-${status}`);
           container.innerHTML = '';
 
-          list.forEach(deal => {
-            const cardHtml = `
-              <div id="card-${deal.id}" class="kanban-card" draggable="true" ondragstart="dragStart(event, '${deal.id}', '${status}')" ondragend="dragEnd(event)">
-                <div class="font-bold text-gray-900 text-sm mb-1">${deal.leadName || 'Chưa cập nhật'}</div>
-                <div class="text-xs text-gray-500 mb-2">${deal.leadPhone || ''}</div>
-                <div class="text-xs text-gray-400 mb-3">${formatDateTime(deal.createdAt)}</div>
-                
-                <div class="flex flex-wrap gap-2 items-center">
-                  ${deal.courseName ? `<span class="text-[10px] font-bold text-blue-600 uppercase tracking-wider">${deal.courseName}</span>` : ''}
-                  ${deal.dealStatus === 'CANCELLED' ? `<span class="text-[10px] bg-red-100 text-red-600 px-2 py-0.5 rounded-md font-semibold">Lý do: Học phí cao</span>` : ''}
-                  ${deal.dealStatus === 'COMPLETED' ? `<span class="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded-md font-semibold">Đã thanh toán</span>` : ''}
-                  ${deal.dealStatus === 'PENDING_CONSULT' ? `<span class="text-[10px] bg-orange-100 text-orange-600 px-2 py-0.5 rounded-md font-semibold flex items-center gap-1">⏰ Hẹn gọi: 16:00 (Hôm nay)</span>` : ''}
+          list.forEach(item => {
+            const card = document.createElement('div');
+            card.className = 'card-item';
+            card.id = `card-deal-${item.id}`;
+            card.draggable = true;
+
+            // Sự kiện kéo thả
+            card.ondragstart = (e) => handleDragStart(e, item.id, item.dealStatus);
+            card.ondragend = (e) => handleDragEnd(e);
+            
+            // Bấm vào thẻ để mở Drawer xem chi tiết
+            card.onclick = () => openDrawer(item.id);
+
+            // Xử lý huy hiệu: Khách Mới / Khách Cũ / Khách Gửi Lại Yêu Cầu
+            let badgeHtml = '';
+            if (item.hasRecentResubmit) {
+              badgeHtml += `<span class="card-tag tag-resubmitted">🔔 Khách gửi lại form</span>`;
+            }
+            if (item.isReturningLead) {
+              badgeHtml += `<span class="card-tag tag-returning-lead">⭐ Khách cũ (Lần ${item.totalLeadDeals})</span>`;
+            } else {
+              badgeHtml += `<span class="card-tag tag-new-lead">🌱 Khách mới</span>`;
+            }
+
+            // Preview nhật ký gần nhất
+            let logPreviewHtml = '';
+            if (item.latestLog) {
+              logPreviewHtml = `
+                <div class="card-log-preview">
+                  <strong>[${item.latestLog.channel}]</strong> ${item.latestLog.outcome}: ${item.latestLog.content.slice(0, 75)}...
                 </div>
-                
-                <div class="text-[9px] text-gray-400 mt-3 text-right">#${deal.dealId || deal.id}</div>
+              `;
+            }
+
+            // Hiển thị lý do hủy nếu ở cột Cancelled
+            let lostReasonHtml = '';
+            if (item.dealStatus === 'CANCELLED' && item.lostReason) {
+              lostReasonHtml = `<div style="font-size: 11px; color: #cf1322; margin-bottom: 6px;"><strong>Lý do hủy:</strong> ${item.lostReason}</div>`;
+            }
+
+            // Hiển thị cọc nếu có
+            let depositBadge = '';
+            if (item.dealStatus === 'PENDING_DEPOSIT' && item.paidAmount > 0) {
+              depositBadge = `<div style="font-size: 11px; color: #722ed1; font-weight: 700; margin-bottom: 6px;">Đã cọc: ${item.paidAmount.toLocaleString('vi-VN')} đ</div>`;
+            }
+
+            // Hiển thị điểm test nếu có
+            let testScoreBadge = '';
+            if (item.testScore > 0) {
+              testScoreBadge = `<div style="font-size: 11px; background: #f6ffed; color: #389e0d; border: 1px solid #b7eb8f; padding: 2px 6px; border-radius: 4px; display: inline-block; font-weight: 700; margin-bottom: 6px;">🎯 Điểm Test: ${item.testScore}/10</div>`;
+            }
+
+            card.innerHTML = `
+              <div class="card-badge-row">${badgeHtml}</div>
+              <div class="card-title">
+                <span>${item.leadName}</span>
+                <span class="card-deal-id">${item.dealId}</span>
+              </div>
+              <div class="card-phone">📞 ${item.leadPhone}</div>
+              <div><span class="card-source">Nguồn: ${item.leadSource}</span></div>
+              <div class="card-course">📚 ${item.courseName}</div>
+              ${depositBadge}
+              ${testScoreBadge}
+              ${lostReasonHtml}
+              ${logPreviewHtml}
+              <div class="card-sale">👤 Phụ trách: <strong>${item.assignedSaleName}</strong></div>
+              <div class="card-actions" onclick="event.stopPropagation()">
+                <button class="btn-sm" onclick="openDrawer(${item.id})">👁️ Chi tiết</button>
+                <button class="btn-sm" style="color: var(--purple); border-color: #d3adf7;" onclick="openSendTestModal(${item.id}, '${item.leadName}')">📝 Test</button>
+                <select class="btn-sm" onchange="changeStatusBySelect(${item.id}, this.value)">
+                  <option value="" disabled selected>Chuyển...</option>
+                  <option value="NEW">1. Mới</option>
+                  <option value="PENDING_CONSULT">2. Chờ tư vấn</option>
+                  <option value="PENDING_DEPOSIT">3. Chờ cọc (VietQR)</option>
+                  <option value="COMPLETED">4. Hoàn thành</option>
+                  <option value="CANCELLED">5. Hủy</option>
+                </select>
               </div>
             `;
-            container.innerHTML += cardHtml;
+            container.appendChild(card);
           });
         });
       } catch (err) {
-        console.error('Error loading kanban:', err);
+        console.error('Lỗi loadKanbanData:', err);
       }
     }
 
-    // Drag and Drop implementation
-    let draggedDealId = null;
-    let sourceStatus = null;
-
-    function dragStart(e, dealId, status) {
-      draggedDealId = dealId;
-      sourceStatus = status;
-      e.target.classList.add('dragging');
-      e.dataTransfer.effectAllowed = 'move';
-      e.dataTransfer.setData('text/plain', dealId);
+    // Dropdown chuyển trạng thái thay thế kéo thả
+    function changeStatusBySelect(dealId, newStatus) {
+      if (newStatus === 'PENDING_DEPOSIT') openDepositModal(dealId);
+      else if (newStatus === 'CANCELLED') openCancelModal(dealId);
+      else if (newStatus === 'COMPLETED') {
+        if (confirm('Xác nhận hoàn thành hồ sơ tuyển sinh?')) updateDealStatusApi(dealId, 'COMPLETED');
+      } else {
+        updateDealStatusApi(dealId, newStatus);
+      }
     }
 
-    function dragEnd(e) {
-      e.target.classList.remove('dragging');
-      document.querySelectorAll('.kanban-items').forEach(col => col.classList.remove('drag-over'));
-    }
-
-    function allowDrop(e) {
-      e.preventDefault();
-      const col = e.target.closest('.kanban-items');
-      if (col) col.classList.add('drag-over');
-    }
-
-    function dragLeave(e) {
-      const col = e.target.closest('.kanban-items');
-      if (col) col.classList.remove('drag-over');
-    }
-
-    async function drop(e, targetStatus) {
-      e.preventDefault();
-      const col = e.target.closest('.kanban-items');
-      if (col) col.classList.remove('drag-over');
-
-      if (!draggedDealId || sourceStatus === targetStatus) return;
-
+    async function updateDealStatusApi(dealId, status, payload = {}) {
       try {
-        const res = await fetch(`/api/deals/${draggedDealId}/status`, {
+        const res = await fetch(`/api/deals/${dealId}/status`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ dealStatus: targetStatus })
+          headers: { 'Content-Type': 'application/json; charset=utf-8' },
+          body: JSON.stringify({ dealStatus: status, ...payload })
         });
         const data = await res.json();
-        
         if (data.success) {
           loadKanbanData();
         } else {
-          alert('Lỗi cập nhật trạng thái: ' + (data.error || 'Thao tác không thành công'));
+          alert('Lỗi cập nhật: ' + (data.error || 'Thao tác không thành công'));
         }
       } catch (err) {
-        alert('Lỗi kết nối mạng: ' + err.message);
+        alert('Lỗi kết nối: ' + err.message);
       }
     }
 
-    // Load data on start
+    // ==========================================
+    // 3. TRA CỨU KHÁCH HÀNG THEO SĐT
+    // ==========================================
+    async function lookupCustomer() {
+      const phone = document.getElementById('lookupPhone').value.trim();
+      if (!phone) return alert('Vui lòng nhập số điện thoại cần tra cứu!');
+
+      try {
+        const res = await fetch(`/api/leads/lookup?phone=${encodeURIComponent(phone)}`);
+        const data = await res.json();
+        const card = document.getElementById('customerResult');
+        card.style.display = 'block';
+
+        const activeAlert = document.getElementById('activeDealAlert');
+
+        if (!data.exists) {
+          activeAlert.style.display = 'none';
+          document.getElementById('customerBadge').className = 'customer-badge badge-new';
+          document.getElementById('customerBadge').innerText = '🌱 KHÁCH HÀNG MỚI (CHƯA CÓ TRONG HỆ THỐNG)';
+          document.getElementById('resName').innerText = 'Chưa có';
+          document.getElementById('resPhone').innerText = phone;
+          document.getElementById('resEmail').innerText = 'Chưa có';
+          document.getElementById('resSource').innerText = 'Hotline / Nhắn tin mới';
+          document.getElementById('historyBlock').style.display = 'none';
+          currentLeadData = null;
+          return;
+        }
+
+        currentLeadData = data.lead;
+
+        // Kiểm tra xem khách có Deal nào đang active trên phễu không
+        if (data.hasActiveDeal) {
+          activeAlert.style.display = 'flex';
+          document.getElementById('alertDealCode').innerText = `ID #${data.activeDealId}`;
+          document.getElementById('alertDealStatus').innerText = data.activeDealStatus;
+          activeAlert.dataset.dealId = data.activeDealId;
+        } else {
+          activeAlert.style.display = 'none';
+        }
+
+        document.getElementById('customerBadge').className = 'customer-badge badge-returning';
+        document.getElementById('customerBadge').innerText = `⭐ KHÁCH HÀNG CŨ (QUAY LẠI - ĐÃ CÓ ${data.totalDeals} LẦN TƯ VẤN)`;
+        document.getElementById('resName').innerText = data.lead.leadName;
+        document.getElementById('resPhone').innerText = data.lead.leadPhone;
+        document.getElementById('resEmail').innerText = data.lead.leadEmail || 'Không có';
+        document.getElementById('resSource').innerText = data.lead.leadSource || 'Chưa rõ';
+        document.getElementById('historyBlock').style.display = 'block';
+
+        // Lịch sử deals
+        const tbody = document.getElementById('resHistoryBody');
+        tbody.innerHTML = '';
+        (data.dealsHistory || []).forEach(d => {
+          const logsText = (d.logs || []).map(l => `• <strong>[${l.logChannel}]</strong> ${l.logOutcome}: ${l.logNoteContent}`).join('<br>') || 'Chưa có ghi chú';
+          let noteInfo = '-';
+          if (d.lostReason) {
+            noteInfo = `<span style="color: #cf1322;"><strong>Lý do hủy:</strong> ${d.lostReason}</span>`;
+            if (d.lostNote) noteInfo += `<br><small>(${d.lostNote})</small>`;
+          }
+
+          tbody.innerHTML += `
+            <tr>
+              <td><strong>${d.dealId}</strong></td>
+              <td>📚 ${d.courseName}</td>
+              <td><span class="tag-status tag-${d.status}">${d.status}</span></td>
+              <td>${(d.paidAmount || 0).toLocaleString('vi-VN')} đ</td>
+              <td>${noteInfo}</td>
+              <td style="font-size: 11px; line-height: 1.5;">${logsText}</td>
+            </tr>
+          `;
+        });
+      } catch (err) {
+        alert('Lỗi tra cứu: ' + err.message);
+      }
+    }
+
+    function locateAndHighlightDeal() {
+      const dealId = document.getElementById('activeDealAlert').dataset.dealId;
+      if (!dealId) return;
+      const el = document.getElementById(`card-deal-${dealId}`);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        el.classList.add('highlight-pulse');
+        setTimeout(() => el.classList.remove('highlight-pulse'), 4500);
+      } else {
+        alert('Thẻ này đang ở trang khác hoặc vừa thay đổi.');
+      }
+    }
+
+    // ==========================================
+    // 4. SIDE DRAWER CHI TIẾT DEAL (CHỨC NĂNG 1.4)
+    // ==========================================
+    async function openDrawer(dealId) {
+      try {
+        const res = await fetch(`/api/deals/${dealId}/detail`);
+        const data = await res.json();
+        if (!res.ok) return alert(data.error || 'Lỗi tải chi tiết deal');
+
+        const d = data.deal;
+        const l = data.lead || {};
+        const c = data.course || {};
+        const s = data.sale;
+
+        document.getElementById('drLeadName').innerText = l.leadName || 'Chi Tiết Khách Hàng';
+        document.getElementById('drDealId').innerText = `Mã cơ hội: ${d.dealId} | Trạng thái: ${d.dealStatus}`;
+        document.getElementById('drInputDealId').value = dealId;
+
+        document.getElementById('drName').innerText = l.leadName || '-';
+        document.getElementById('drPhone').innerText = l.leadPhone || '-';
+        document.getElementById('drEmail').innerText = l.leadEmail || 'Chưa cung cấp';
+        document.getElementById('drSource').innerText = l.leadSource || 'Website';
+
+        document.getElementById('drCourse').innerText = c.courseName || 'Chưa chọn';
+        document.getElementById('drStatus').innerHTML = `<span class="tag-status tag-${d.dealStatus}">${d.dealStatus}</span>`;
+        document.getElementById('drTuition').innerText = (c.courseTuitionFee || 0).toLocaleString('vi-VN') + ' đ';
+        document.getElementById('drPaid').innerText = (d.dealPaidAmount || 0).toLocaleString('vi-VN') + ' đ';
+        document.getElementById('drSale').innerText = s ? `${s.saleName} (${s.salePhone})` : 'Chưa phân bổ';
+        document.getElementById('drDate').innerText = new Date(d.dealCreatedAt).toLocaleString('vi-VN');
+
+        // Điểm thi test năng lực
+        const testScore = d.dealTestScore || 0;
+        document.getElementById('drTestScore').innerText = testScore > 0 ? `${testScore} / 10 điểm` : 'Chưa làm bài test';
+        let evalText = 'Chưa có kết quả';
+        if (testScore >= 8.0) evalText = 'Xuất sắc (Đạt chuẩn lớp Chuyên sâu / Nâng cao)';
+        else if (testScore >= 6.0) evalText = 'Khá (Đạt chuẩn lớp Tiêu chuẩn)';
+        else if (testScore > 0) evalText = 'Cơ bản (Cần bổ trợ thêm kiến thức)';
+        document.getElementById('drTestEval').innerText = evalText;
+
+        // Các deal khác của khách này
+        const otherSec = document.getElementById('drOtherDealsSection');
+        const otherList = document.getElementById('drOtherDealsList');
+        otherList.innerHTML = '';
+        if (data.otherDeals && data.otherDeals.length > 0) {
+          otherSec.style.display = 'block';
+          data.otherDeals.forEach(od => {
+            otherList.innerHTML += `<li>Deal <strong>${od.dealId}</strong>: Trạng thái [${od.dealStatus}] ngày ${new Date(od.dealCreatedAt).toLocaleDateString('vi-VN')}</li>`;
+          });
+        } else {
+          otherSec.style.display = 'none';
+        }
+
+        // Timeline logs
+        const timeline = document.getElementById('drTimeline');
+        timeline.innerHTML = '';
+        if (data.logs && data.logs.length > 0) {
+          data.logs.forEach(log => {
+            const timeStr = new Date(log.logCreatedAt).toLocaleString('vi-VN');
+            timeline.innerHTML += `
+              <div class="timeline-item">
+                <div class="timeline-time">${timeStr}</div>
+                <div class="timeline-content">
+                  <strong>[${log.logChannel}]</strong> ${log.logOutcome}<br>
+                  ${log.logNoteContent}
+                </div>
+              </div>
+            `;
+          });
+        } else {
+          timeline.innerHTML = '<div style="font-size: 13px; color: #8c8c8c;">Chưa có ghi chép nào. Hãy thêm ở ô bên dưới!</div>';
+        }
+
+        document.getElementById('drawerOverlay').classList.add('active');
+      } catch (err) {
+        alert('Lỗi xem chi tiết: ' + err.message);
+      }
+    }
+
+    function closeDrawer(e) {
+      if (!e || e.target.id === 'drawerOverlay' || e.target.className === 'drawer-close') {
+        document.getElementById('drawerOverlay').classList.remove('active');
+      }
+    }
+
+    async function submitDrawerLog() {
+      const dealId = document.getElementById('drInputDealId').value;
+      const channel = document.getElementById('drInputChannel').value;
+      const outcome = document.getElementById('drInputOutcome').value;
+      const note = document.getElementById('drInputNote').value.trim();
+      const appt = document.getElementById('drInputAppointment').value.trim();
+
+      if (!note) return alert('Vui lòng nhập nội dung trao đổi!');
+
+      try {
+        await fetch(`/api/deals/${dealId}/log`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json; charset=utf-8' },
+          body: JSON.stringify({
+            logChannel: channel,
+            logOutcome: outcome,
+            logNoteContent: note,
+            nextAppointment: appt
+          })
+        });
+
+        document.getElementById('drInputNote').value = '';
+        document.getElementById('drInputAppointment').value = '';
+        openDrawer(dealId); // Refresh lại Drawer
+        loadKanbanData();   // Refresh Kanban
+      } catch (err) {
+        alert('Lỗi lưu log: ' + err.message);
+      }
+    }
+
+    // ==========================================
+    // 5. MODAL VIETQR & ĐẶT CỌC (CHỨC NĂNG 1.5)
+    // ==========================================
+    async function openDepositModal(dealId) {
+      document.getElementById('depositDealId').value = dealId;
+
+      try {
+        const res = await fetch(`/api/deals/${dealId}/detail`);
+        const data = await res.json();
+        const c = data.course || {};
+        const l = data.lead || {};
+
+        document.getElementById('depositCourseName').value = c.courseName || 'Khóa học';
+        document.getElementById('depositTuition').value = (c.courseTuitionFee || 0).toLocaleString('vi-VN') + ' đ';
+        
+        const depositAmt = c.courseDepositFee || 2000000;
+        document.getElementById('depositAmount').value = depositAmt;
+
+        document.getElementById('depositModal').dataset.leadPhone = l.leadPhone || '0988776655';
+        document.getElementById('depositModal').dataset.dealCode = data.deal.dealId || 'DEAL';
+
+        updateVietQRImage();
+        document.getElementById('depositModal').classList.add('active');
+      } catch (err) {
+        alert('Lỗi tải thông tin cọc: ' + err.message);
+      }
+    }
+
+    function updateVietQRImage() {
+      const modal = document.getElementById('depositModal');
+      const phone = modal.dataset.leadPhone || '0988776655';
+      const dealCode = modal.dataset.dealCode || 'DEAL';
+      const amount = Number(document.getElementById('depositAmount').value) || 2000000;
+      
+      const syntax = `MEKO ${dealCode} ${phone}`;
+      document.getElementById('vietqrSyntax').innerText = syntax;
+
+      const qrUrl = `https://img.vietqr.io/image/970422-0988776655-compact2.png?amount=${amount}&addInfo=${encodeURIComponent(syntax)}&accountName=HOC%20VIEN%20MEKO`;
+      document.getElementById('vietqrImg').src = qrUrl;
+    }
+
+    async function confirmDepositTransition() {
+      const dealId = document.getElementById('depositDealId').value;
+      const amount = Number(document.getElementById('depositAmount').value) || 0;
+
+      await updateDealStatusApi(dealId, 'PENDING_DEPOSIT', { paidAmount: amount });
+      closeModal('depositModal');
+    }
+
+    // ==========================================
+    // 6. MODAL HỦY HỒ SƠ (CHỨC NĂNG 1.5)
+    // ==========================================
+    function openCancelModal(dealId) {
+      document.getElementById('cancelDealId').value = dealId;
+      document.getElementById('cancelNote').value = '';
+      document.getElementById('cancelModal').classList.add('active');
+    }
+
+    async function confirmCancelTransition() {
+      const dealId = document.getElementById('cancelDealId').value;
+      const reason = document.getElementById('cancelReason').value;
+      const note = document.getElementById('cancelNote').value.trim();
+
+      await updateDealStatusApi(dealId, 'CANCELLED', { lostReason: reason, lostNote: note });
+      closeModal('cancelModal');
+    }
+
+    // ==========================================
+    // 7. MODAL TẠO DEAL KHÁCH CŨ
+    // ==========================================
+    function openCreateDealModal() {
+      if (!currentLeadData) return alert('Vui lòng tra cứu số điện thoại trước!');
+      document.getElementById('createDealModal').classList.add('active');
+    }
+
+    async function submitNewDealForLead() {
+      const courseId = document.getElementById('newDealCourse').value;
+      const saleId = document.getElementById('newDealStaff').value;
+      const source = document.getElementById('newDealSource').value;
+      const note = document.getElementById('newDealNote').value.trim();
+
+      try {
+        const res = await fetch('/api/deals/create-deal', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json; charset=utf-8' },
+          body: JSON.stringify({ leadId: currentLeadData.id, courseId, saleId, source, note })
+        });
+        const data = await res.json();
+        if (data.success) {
+          alert('Tạo Deal mới thành công! Hồ sơ đã được thêm vào cột MỚI trên Kanban.');
+          closeModal('createDealModal');
+          loadKanbanData();
+          lookupCustomer();
+        }
+      } catch (err) {
+        alert('Lỗi tạo deal: ' + err.message);
+      }
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).classList.remove('active');
+    }
+
+    // ==========================================
+    // 8. GỬI BÀI TEST & COPY LINK (CHỨC NĂNG TEST NĂNG LỰC)
+    // ==========================================
+    function openSendTestModal(dealId, name) {
+      const link = `${window.location.origin}/test?dealId=${dealId}`;
+      document.getElementById('sendTestStudentName').innerText = name || 'Học viên';
+      document.getElementById('sendTestLink').value = link;
+      document.getElementById('sendTestMessageTemplate').value = 
+`Chào bạn ${name}! Meko Academy gửi bạn bài kiểm tra năng lực đầu vào để chuyên viên tư vấn xếp lớp và xây dựng lộ trình học tập phù hợp nhất.
+👉 Vui lòng truy cập đường link sau để làm bài trắc nghiệm (15 phút):
+${link}
+Kết quả sẽ được hệ thống chấm điểm và thông báo ngay sau khi bạn nộp bài. Chúc bạn hoàn thành bài thi thật tốt!`;
+      document.getElementById('sendTestModal').dataset.testUrl = link;
+      document.getElementById('sendTestModal').classList.add('active');
+    }
+
+    function copyTestLink() {
+      const input = document.getElementById('sendTestLink');
+      input.select();
+      navigator.clipboard.writeText(input.value);
+      alert('Đã sao chép đường link bài test vào bộ nhớ tạm! Bạn có thể dán gửi cho học viên qua Zalo/Facebook.');
+    }
+
+    function openTestDirectly() {
+      const url = document.getElementById('sendTestModal').dataset.testUrl;
+      if (url) window.open(url, '_blank');
+    }
+
+    // Khởi tạo Select options
+    async function initOptions() {
+      try {
+        const [cRes, sRes] = await Promise.all([fetch('/api/courses'), fetch('/api/staff')]);
+        cachedCourses = await cRes.json();
+        cachedStaff = await sRes.json();
+
+        const courseSel = document.getElementById('newDealCourse');
+        courseSel.innerHTML = '';
+        cachedCourses.forEach(c => courseSel.innerHTML += `<option value="${c.id}">${c.courseName} (${(c.courseTuitionFee || 0).toLocaleString('vi-VN')} đ)</option>`);
+
+        const staffSel = document.getElementById('newDealStaff');
+        staffSel.innerHTML = '';
+        cachedStaff.forEach(s => staffSel.innerHTML += `<option value="${s.id}">${s.saleName} (${s.salePhone})</option>`);
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    initOptions();
     loadKanbanData();
   </script>
 </body>

@@ -1,6 +1,8 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const multer = require('multer');
+const fs = require('fs');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -72,6 +74,21 @@ async function assignSaleToDeal(dealId, saleId) {
   }
 }
 
+// Cấu hình multer để upload ảnh
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    const dir = path.join(__dirname, 'public', 'uploads');
+    if (!fs.existsSync(dir)){
+        fs.mkdirSync(dir, { recursive: true });
+    }
+    cb(null, dir);
+  },
+  filename: function (req, file, cb) {
+    cb(null, Date.now() + '-' + file.originalname);
+  }
+});
+const upload = multer({ storage: storage });
+
 // 1. API: Danh sách Khóa học / Lớp học (Chức năng Quản lý Lớp)
 app.get('/api/courses', async (req, res) => {
   try {
@@ -83,20 +100,32 @@ app.get('/api/courses', async (req, res) => {
 });
 
 // Thêm Khóa học / Lớp học mới
-app.post('/api/courses', async (req, res) => {
+app.post('/api/courses', upload.single('courseImage'), async (req, res) => {
   try {
-    const { courseId, courseName, courseTuitionFee, courseDepositFee } = req.body;
+    const { courseId, courseName, courseTuitionFee, courseDepositFee, courseTeacher, courseSchedule } = req.body;
     if (!courseName) return res.status(400).json({ error: 'Tên khóa học / lớp học là bắt buộc!' });
 
     const code = courseId || `CLASS-${Date.now().toString().slice(-6)}`;
+    
+    // Xử lý file ảnh nếu có
+    let imageUrl = '';
+    if (req.file) {
+      imageUrl = '/uploads/' + req.file.filename;
+    }
+
+    const payload = {
+      courseId: code,
+      courseName: courseName.trim(),
+      courseTuitionFee: Number(courseTuitionFee) || 0,
+      courseDepositFee: Number(courseDepositFee) || 0,
+      courseTeacher: courseTeacher || '',
+      courseSchedule: courseSchedule || '',
+      courseImage: imageUrl
+    };
+
     const created = await liferayFetch('/o/c/courses', {
       method: 'POST',
-      body: JSON.stringify({
-        courseId: code,
-        courseName: courseName.trim(),
-        courseTuitionFee: Number(courseTuitionFee) || 0,
-        courseDepositFee: Number(courseDepositFee) || 0
-      })
+      body: JSON.stringify(payload)
     });
     res.json({ success: true, course: created });
   } catch (err) {

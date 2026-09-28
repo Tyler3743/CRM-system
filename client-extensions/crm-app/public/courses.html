@@ -97,6 +97,18 @@
             <input type="text" id="courseName" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:border-red-600 focus:outline-none" placeholder="VD: IELTS 6.5+ (Lớp K25 Tối 2-4-6)" required>
           </div>
           <div>
+            <label class="block text-sm font-semibold text-gray-700 mb-1">Giáo viên phụ trách</label>
+            <input type="text" id="courseTeacher" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:border-red-600 focus:outline-none" placeholder="VD: Cô Thu Trang">
+          </div>
+          <div>
+            <label class="block text-sm font-semibold text-gray-700 mb-1">Lịch học</label>
+            <input type="text" id="courseSchedule" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:border-red-600 focus:outline-none" placeholder="VD: Tối 2-4-6 (19h00 - 21h00)">
+          </div>
+          <div>
+            <label class="block text-sm font-semibold text-gray-700 mb-1">Hình ảnh</label>
+            <input type="file" id="courseImage" accept="image/*" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:border-red-600 focus:outline-none">
+          </div>
+          <div>
             <label class="block text-sm font-semibold text-gray-700 mb-1">Học Phí Chính Thức (VNĐ) <span class="text-red-500">*</span></label>
             <input type="number" id="tuitionFee" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:border-red-600 focus:outline-none" placeholder="VD: 12000000" min="0" required>
           </div>
@@ -116,52 +128,25 @@
   <script>
     let allCourses = [];
 
-    // Mock data generators for visual representation (since backend only has basic fields)
-    const MOCK_TEACHERS = ['Cô Thu Trang', 'Thầy Mark', 'Cô Minh Hằng', 'Thầy Tuấn', 'Cô Mai Anh'];
-    const MOCK_SCHEDULES = ['Tối 2-4-6 (19h00 - 21h00)', 'Tối 3-5-7 (18h00 - 20h00)', 'Sáng T7 - CN (08h00 - 11h00)', 'Chiều 2-3-4-5-6'];
-    const MOCK_STATUSES = [
-      { text: 'SẮP KHAI GIẢNG', bg: 'bg-orange-100', textc: 'text-orange-700' },
-      { text: 'ĐANG HỌC', bg: 'bg-green-100', textc: 'text-green-700' },
-      { text: 'ĐANG TUYỂN SINH', bg: 'bg-blue-100', textc: 'text-blue-700' },
-      { text: 'ĐÃ KẾT THÚC', bg: 'bg-gray-100', textc: 'text-gray-600' }
-    ];
-    const MOCK_IMAGES = [
-      'https://images.unsplash.com/photo-1546410531-bb4caa6b424d?auto=format&fit=crop&q=80&w=400&h=200',
-      'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&q=80&w=400&h=200',
-      'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?auto=format&fit=crop&q=80&w=400&h=200',
-      'https://images.unsplash.com/photo-1503676260728-1c00da094a0b?auto=format&fit=crop&q=80&w=400&h=200'
-    ];
-
-    function getRandomItem(arr, str) {
-      // Deterministic based on course name length so it doesn't change on every render
-      const index = (str.length) % arr.length;
-      return arr[index];
+    async function loadCourses() {
+      try {
+        const res = await fetch('/api/courses');
+        allCourses = await res.json();
+        renderGrid(allCourses);
+      } catch (err) {
+        document.getElementById('coursesGrid').innerHTML = `<div class="col-span-full text-center text-red-500">Lỗi tải danh sách: ${err.message}</div>`;
+      }
     }
 
     function renderCard(course) {
-      const teacher = getRandomItem(MOCK_TEACHERS, course.courseName);
-      const schedule = getRandomItem(MOCK_SCHEDULES, course.courseName + 'a');
-      const statusObj = getRandomItem(MOCK_STATUSES, course.courseName + 'b');
-      const image = getRandomItem(MOCK_IMAGES, course.courseName + 'c');
+      const teacher = course.courseTeacher || 'Chưa phân công';
+      const schedule = course.courseSchedule || 'Chưa có lịch';
+      const image = course.courseImage || 'https://images.unsplash.com/photo-1546410531-bb4caa6b424d?auto=format&fit=crop&q=80&w=400&h=200';
       
-      const maxStudents = 20 + (course.courseName.length % 10);
-      let currentStudents = 15 + (course.courseName.length % 6);
-      if (statusObj.text === 'ĐÃ KẾT THÚC') currentStudents = maxStudents;
-      const progressPercent = (currentStudents / maxStudents) * 100;
-      const remaining = maxStudents - currentStudents;
+      const maxStudents = 20;
+      let currentStudents = 0;
+      const progressPercent = 0;
       
-      let capacityText = `<span class="text-red-600 font-semibold">Còn trống ${remaining}</span>`;
-      let progressColor = 'bg-blue-600';
-      
-      if (remaining === 0) {
-        capacityText = `<span class="text-green-600 font-semibold">Kín chỗ</span>`;
-        progressColor = 'bg-green-500';
-      }
-      if (statusObj.text === 'ĐÃ KẾT THÚC') {
-        capacityText = `<span class="text-gray-500 font-semibold">Trống 0</span>`;
-        progressColor = 'bg-gray-400';
-      }
-
       return `
         <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex flex-col card-hover h-full">
           <div class="h-40 w-full relative overflow-hidden bg-gray-200">
@@ -172,7 +157,7 @@
           <div class="p-5 flex-grow flex flex-col">
             <div class="flex justify-between items-start gap-2 mb-3">
               <h3 class="font-bold text-gray-900 text-lg leading-tight line-clamp-2">${course.courseName}</h3>
-              <span class="whitespace-nowrap px-2 py-1 rounded-md text-[10px] font-bold ${statusObj.bg} ${statusObj.textc}">${statusObj.text}</span>
+              <span class="whitespace-nowrap px-2 py-1 rounded-md text-[10px] font-bold bg-blue-100 text-blue-700">ĐANG TUYỂN SINH</span>
             </div>
             
             <div class="space-y-2 mb-6 text-sm text-gray-600">
@@ -189,33 +174,21 @@
             <div class="mt-auto">
               <div class="flex justify-between text-xs mb-1">
                 <span class="font-bold text-gray-800">Sĩ số: ${currentStudents} / ${maxStudents} học viên</span>
-                ${capacityText}
               </div>
               <div class="w-full bg-gray-100 rounded-full h-1.5 mb-4">
-                <div class="${progressColor} h-1.5 rounded-full" style="width: ${progressPercent}%"></div>
+                <div class="bg-blue-600 h-1.5 rounded-full" style="width: ${progressPercent}%"></div>
               </div>
             </div>
           </div>
           
           <div class="border-t border-gray-100 p-4 text-center">
             <button class="text-blue-600 font-semibold text-sm hover:text-blue-800 w-full" onclick="alert('Quản lý khóa học ID: ${course.id} hiện chưa khả dụng.')">
-              ${statusObj.text === 'ĐÃ KẾT THÚC' ? 'Xem lại dữ liệu lớp' : 'Quản lý lớp học này'}
+              Quản lý lớp học này
             </button>
-            <!-- Hidden delete for admin -->
             <button class="text-xs text-red-400 hover:text-red-600 mt-2 block w-full text-center" onclick="deleteCourse('${course.id}', '${course.courseName}')">Xóa (Admin)</button>
           </div>
         </div>
       `;
-    }
-
-    async function loadCourses() {
-      try {
-        const res = await fetch('/api/courses');
-        allCourses = await res.json();
-        renderGrid(allCourses);
-      } catch (err) {
-        document.getElementById('coursesGrid').innerHTML = `<div class="col-span-full text-center text-red-500">Lỗi tải danh sách: ${err.message}</div>`;
-      }
     }
 
     function renderGrid(courses) {
@@ -237,11 +210,8 @@
       const filtered = allCourses.filter(c => {
         const matchSearch = c.courseName.toLowerCase().includes(search) || (c.courseId || '').toLowerCase().includes(search);
         
-        // Mock status logic
-        const statusObj = getRandomItem(MOCK_STATUSES, c.courseName + 'b');
-        const matchStatus = statusFilter === 'all' || statusObj.text === statusFilter;
-        
-        return matchSearch && matchStatus;
+        // Cần cập nhật hàm filter sau khi xóa mock status nếu sử dụng status thật từ server
+        return matchSearch;
       });
       
       renderGrid(filtered);
@@ -253,18 +223,23 @@
       btn.innerText = 'Đang lưu...';
       btn.disabled = true;
 
-      const payload = {
-        courseId: document.getElementById('courseCode').value.trim(),
-        courseName: document.getElementById('courseName').value.trim(),
-        courseTuitionFee: document.getElementById('tuitionFee').value,
-        courseDepositFee: document.getElementById('depositFee').value
-      };
+      const formData = new FormData();
+      formData.append('courseId', document.getElementById('courseCode').value.trim());
+      formData.append('courseName', document.getElementById('courseName').value.trim());
+      formData.append('courseTeacher', document.getElementById('courseTeacher').value.trim());
+      formData.append('courseSchedule', document.getElementById('courseSchedule').value.trim());
+      formData.append('courseTuitionFee', document.getElementById('tuitionFee').value);
+      formData.append('courseDepositFee', document.getElementById('depositFee').value);
+      
+      const imageFile = document.getElementById('courseImage').files[0];
+      if (imageFile) {
+        formData.append('courseImage', imageFile);
+      }
 
       try {
         const res = await fetch('/api/courses', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json; charset=utf-8' },
-          body: JSON.stringify(payload)
+          body: formData
         });
         const data = await res.json();
 
